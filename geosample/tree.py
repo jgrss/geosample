@@ -14,9 +14,21 @@ class TreeMixin(ABC):
 
     @property
     def crs(self):
+        """Get the GeoDataFrame CRS"""
         return self.dataframe.crs
 
     def create_poly(self, bounds):
+
+        """
+        Creates a Polygon geometry
+
+        Args:
+            bounds (tuple): Left, bottom, right, top.
+
+        Returns:
+            ``shapely.geometry.Polygon``
+        """
+
         left, bottom, right, top = bounds
 
         return Polygon([(left, bottom),
@@ -52,11 +64,18 @@ class QuadTree(TreeMixin):
 
     @property
     def nquads(self):
+        """Get the number of quadrants in the tree"""
         return len(self.tree)
 
     @property
     def tree(self):
+        """Get the quadrant tree geometry"""
         return self.to_geom()
+
+    @property
+    def qlen(self):
+        """Get the length of a quadrant"""
+        return self.tree_bounds[0][2] - self.tree_bounds[0][0]
 
     def to_geom(self):
         """Converts quadrant bounds to geometry"""
@@ -100,11 +119,6 @@ class QuadTree(TreeMixin):
         point_int = list(self.sindex.intersection(bbox))
 
         return len(point_int) if point_int else 0
-
-    @property
-    def qlen(self):
-        """Get the length of a quadrant"""
-        return self.tree_bounds[0][2] - self.tree_bounds[0][0]
 
     def split(self):
 
@@ -187,11 +201,15 @@ class QuadTree(TreeMixin):
     def sample(self, n=None, random_state=None):
 
         """
-        Samples from the hierarchical grid address
+        Samples from the hierarchical grid address using the
+        Generalized Random Tessellation Stratified (GRTS) method
 
         Args:
             n (int): The target sample size.
             random_state (Optional[int])
+
+        Returns:
+            ``geopandas.GeoDataFrame``
         """
 
         if not isinstance(n, int):
