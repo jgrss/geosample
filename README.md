@@ -6,6 +6,25 @@
 
 Use GeoSample to generate random samples that are spatially balanced using the Generalized Random Tessellation Stratified (GRTS) method. 
 
+#### What is GRTS?
+
+> A sampling approach that maps 2-dimensional samples onto a 1-dimensional plane, sorted by base 4 hierarchical grid ids. See Stevens and Olsen (2004) for details on the method. Slides outlining the method can be found [here](https://archive.epa.gov/nheerl/arm/web/pdf/grts_ss.pdf) and [here](https://qcnrgradstudentcouncil.files.wordpress.com/2012/12/ecolunch_grts.pdf). The [`grts` R library](https://rdrr.io/cran/spsurvey/man/grts.html) provides a more in-depth GRTS framework. 
+
+```bibtex
+@article{stevens_olsen_2004,
+  title={Spatially balanced sampling of natural resources},
+  author={Stevens Jr, Don L and Olsen, Anthony R},
+  journal={Journal of the American statistical Association},
+  volume={99},
+  number={465},
+  pages={262--278},
+  year={2004},
+  publisher={Taylor \& Francis}
+}
+```
+
+# Basic example
+
 ```python
 >>> from geosample import QuadTree
 >>> import geopandas as gpd
