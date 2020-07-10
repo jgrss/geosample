@@ -2,6 +2,10 @@
 [![](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)
 ![](https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000)
 
+# GeoSample is a library for geospatial sampling
+
+Use GeoSample to generate random samples that are spatially balanced using the Generalized Random Tessellation Stratified (GRTS) method. 
+
 ```python
 >>> from geosample import QuadTree
 >>> import geopandas as gpd
@@ -22,3 +26,84 @@
 >>> # Get 5 random points using the Generalized Random Tessellation Stratified (GRTS) method
 >>> dfs = qt.sample(n=5)
 ```
+
+# Examples
+
+## Start with random samples
+
+![](data/grts_fig1.png)
+
+## Split the tree recursively
+
+```python
+>>> qt = QuadTree(df)
+>>>
+>>> for i in range(0, 4):
+>>>     qt.split()
+```
+
+![](data/grts_fig2.png)
+
+## Split until maximum number of points in each quadrant
+
+```python
+>>> qt = QuadTree(df)
+>>> qt.split_recursive(max_samples=100)
+```
+
+![](data/grts_fig3.png)
+
+```python
+>>> qt = QuadTree(df)
+>>> qt.split_recursive(max_samples=50)
+```
+
+![](data/grts_fig4.png)
+
+## Split until maximum quadrant length
+
+```python
+>>> qt = QuadTree(df)
+>>> qt.split_recursive(max_length=5000)
+```
+
+![](data/grts_fig5.png)
+
+# Spatially balanced sampling
+
+## Generalized Random Tessellation Stratified (GRTS)
+
+```python
+>>> qt = QuadTree(df)
+>>> qt.split_recursive(max_length=10000)
+>>> n_samples = 20
+>>>
+>>> df.sample(n=n_samples, replace=False).plot(markersize=20, 
+>>>                                            color='orange', 
+>>>                                            edgecolor='k', 
+>>>                                            lw=0.5,  
+>>>                                            label='Random sample with no balancing')
+>>>
+>>> qt.sample(n=n_samples).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
+```
+
+![](data/grts_fig6.png)
+
+## Generalized Random Tessellation Stratified (GRTS) with cluster center weights
+
+```python
+>>> qt = QuadTree(df)
+>>> qt.split_recursive(max_length=10000)
+>>> n_samples = 20
+>>>
+>>> df.sample(n=n_samples, replace=False).plot(markersize=20, 
+>>>                                            color='orange', 
+>>>                                            edgecolor='k', 
+>>>                                            lw=0.5,  
+>>>                                            label='Random sample with no balancing')
+>>>
+>>> qt.sample(n=n_samples, 
+>>>           weight_by_clusters=True).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
+```
+
+![](data/grts_fig7.png)

@@ -4,12 +4,14 @@ from distutils.core import setup
 try:
     import numpy as np
 except:
-    raise ImportError('NumPy must be installed to build GeoWombat.')
+    raise ImportError('NumPy must be installed to build GeoSample.')
 
+
+pkg_name = 'geosample'
 
 # Parse the version from the module.
 # Source: https://github.com/mapbox/rasterio/blob/master/setup.py
-with open('geosample/version.py') as f:
+with open(f'{pkg_name}/version.py') as f:
 
     for line in f:
 
@@ -21,12 +23,11 @@ with open('geosample/version.py') as f:
 
             continue
 
-pkg_name = 'geosample'
 maintainer = 'Jordan Graesser'
 maintainer_email = ''
 description = 'Geo-sampling'
-git_url = 'https://github.com/jgrss/geosample'
-download_url = 'https://github.com/jgrss/geosample/archive/{VERSION}.tar.gz'.format(VERSION=version)
+git_url = f'https://github.com/jgrss/{pkg_name}'
+download_url = f'https://github.com/jgrss/{pkg_name}/archive/{version}.tar.gz'
 keywords = []
 
 with open('README.md') as f:
