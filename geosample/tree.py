@@ -53,13 +53,34 @@ class TreeMixin(ABC):
 
 class QuadTree(TreeMixin):
 
-    def __init__(self, dataframe):
+    """
+    A class to generate a QuadTree
+
+    Args:
+        dataframe (DataFrame)
+        force_square (Optional[bool])
+    """
+
+    def __init__(self, dataframe, force_square=True):
 
         super(QuadTree, self).__init__(dataframe)
 
+        bounds_ = self.dataframe.total_bounds.flatten().tolist()
+        bounds_names = self.bounds_to_tuple(bounds_)
+
         # Initiate the tree as the total bounds
-        self.tree_bounds = [self.dataframe.total_bounds.flatten().tolist()]
+        self.tree_bounds = [bounds_]
         self.tree_ids = ['0']
+
+        if force_square:
+
+            # Update the grid to force quadrants of equal length
+            if self.min_qside == 'y':
+                bounds_ = (bounds_names.left, bounds_names.top-abs(self.qx_len), bounds_names.right, bounds_names.top)
+            else:
+                bounds_ = (bounds_names.left, bounds_names.bottom, bounds_names.left+abs(self.qy_len), bounds_names.top)
+
+            self.tree_bounds = [bounds_]
 
     def __iter__(self):
         return self
