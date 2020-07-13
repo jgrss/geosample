@@ -71,6 +71,7 @@ class QuadTree(TreeMixin):
         # Initiate the tree as the total bounds
         self.tree_bounds = [bounds_]
         self.tree_ids = ['0']
+        self.clusters = None
 
         if force_square:
 
@@ -133,6 +134,15 @@ class QuadTree(TreeMixin):
         """Get the maximum quadrant length"""
         return self.qy_len if self.min_qside == 'x' else self.qx_len
 
+    @property
+    def bounds(self):
+        """Get the tree bounds"""
+        frame_ = self.to_frame().total_bounds.flatten().tolist()
+        return BBox(left=frame_[0],
+                    bottom=frame_[1],
+                    right=frame_[2],
+                    top=frame_[3])
+
     def to_geom(self):
         """Converts quadrant bounds to geometry"""
         return [self.create_poly(bbox) for bbox in self.tree_bounds]
@@ -176,7 +186,7 @@ class QuadTree(TreeMixin):
 
         return len(point_int) if point_int else 0
 
-    def split(self):
+    def split(self, thresh=0):
 
         """
         Splits a tree into quadrants
@@ -184,6 +194,10 @@ class QuadTree(TreeMixin):
         1 | 3
         --|--
         0 | 2
+
+        Args:
+            thresh (int): The sample threshold to remove a quadrant. Default is 0, or remove a
+                quadrant if it is empty.
         """
 
         new_tree_bounds = []
@@ -205,9 +219,18 @@ class QuadTree(TreeMixin):
                                   (left, bottom, xcenter, ycenter),
                                   (xcenter, bottom, right, ycenter)]):
 
-                if list(self.sindex.intersection(bbox)):
-                    new_tree_bounds.append(bbox)
-                    new_tree_ids.append(quad_id + str(id_))
+                id_list = list(self.sindex.intersection(bbox))
+
+                if id_list:
+
+                    if len(id_list) > thresh:
+
+                        new_tree_bounds.append(bbox)
+                        new_tree_ids.append(quad_id + str(id_))
+
+                    else:
+                        self.contains_null = True
+
                 else:
                     self.contains_null = True
 
@@ -216,7 +239,11 @@ class QuadTree(TreeMixin):
 
         return self
 
-    def split_recursive(self, max_samples=100, max_length=None, first_null=False):
+    def split_recursive(self,
+                        max_samples=None,
+                        max_length=None,
+                        first_null=False,
+                        min_thresh=0):
 
         """
         Splits quadrants recursively
@@ -225,14 +252,37 @@ class QuadTree(TreeMixin):
             max_samples (Optional[int]): The maximum number of samples.
             max_length (Optional[float]): The maximum length of a quadrant side. Overrides ``max_samples``.
             first_null (Optional[bool]): Whether to break on the first null quadrant. Overrides ``max_samples``.
+            min_thresh (Optional[bool]): The minimum samples within a quadrant to remove the quadrant. Note that
+                this is a keyword argument passed to ``self.split``. It is not a stopping criterion for
+                recursive splitting.
+
+        Preference:
+            first_null > max_length > max_samples > min_samples
         """
+
+        if first_null:
+
+            max_length = None
+            max_samples = None
+
+        elif isinstance(max_length, float) or isinstance(max_length, int):
+
+            first_null = False
+            max_samples = None
+
+        elif isinstance(max_samples, int):
+
+            if not isinstance(max_samples, int):
+                raise NameError('One of the four options must be chosen.')
+
+            first_null = False
+            max_length = None
 
         old_count = 1e9
 
         while True:
 
-            self.split()
-            max_count = self.counts[max(self.counts, key=self.counts.get)]
+            self.split(thresh=min_thresh)
 
             if isinstance(max_length, float) or isinstance(max_length, int):
 
@@ -244,7 +294,9 @@ class QuadTree(TreeMixin):
                 if self.contains_null:
                     break
 
-            else:
+            elif isinstance(max_samples, int):
+
+                max_count = self.counts[max(self.counts, key=self.counts.get)]
 
                 if max_count <= max_samples:
                     break
@@ -252,7 +304,7 @@ class QuadTree(TreeMixin):
                 if max_count == old_count:
                     break
 
-            old_count = max_count
+                old_count = max_count
 
     def weight_grids(self, n_clusters=10, num_results=2):
 
@@ -274,6 +326,11 @@ class QuadTree(TreeMixin):
 
         # Fit a KMeans
         kmeans = KMeans(n_clusters=n_clusters).fit(X)
+
+        self.clusters = gpd.GeoDataFrame(data=kmeans.predict(X),
+                                         geometry=self.to_geom(),
+                                         crs=self.crs,
+                                         columns=['cluster'])
 
         # Get the n nearest grids to the cluster centers
         for cluster_index in range(0, kmeans.cluster_centers_.shape[0]):
