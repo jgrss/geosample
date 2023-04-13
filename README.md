@@ -1,14 +1,14 @@
 [![](https://img.shields.io/badge/License-MIT-black.svg)](https://lbesson.mit-license.org/)
-[![](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)
-![](https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000)
+[![](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue)](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9%20%7C%20-blue)
+![](https://img.shields.io/badge/version-1.0.1-blue.svg?cacheSeconds=2592000)
 
 # GeoSample is a library for geospatial sampling
 
-Use GeoSample to generate random samples that are spatially balanced using the Generalized Random Tessellation Stratified (GRTS) method. 
+Use GeoSample to generate random samples that are spatially balanced using the Generalized Random Tessellation Stratified (GRTS) method.
 
 #### What is GRTS?
 
-> A sampling approach that maps 2-dimensional samples onto a 1-dimensional plane, sorted by base 4 hierarchical grid ids. See Stevens and Olsen (2004) for details on the method. Slides outlining the method can be found [here](https://archive.epa.gov/nheerl/arm/web/pdf/grts_ss.pdf) and [here](https://qcnrgradstudentcouncil.files.wordpress.com/2012/12/ecolunch_grts.pdf). The [`grts` R library](https://rdrr.io/cran/spsurvey/man/grts.html) provides a more in-depth GRTS framework. 
+> A sampling approach that maps 2-dimensional samples onto a 1-dimensional plane, sorted by base 4 hierarchical grid ids. See Stevens and Olsen (2004) for details on the method. Slides outlining the method can be found [here](https://archive.epa.gov/nheerl/arm/web/pdf/grts_ss.pdf) and [here](https://qcnrgradstudentcouncil.files.wordpress.com/2012/12/ecolunch_grts.pdf). The [`grts` R library](https://rdrr.io/cran/spsurvey/man/grts.html) provides a more in-depth GRTS framework.
 
 ```bibtex
 @article{stevens_olsen_2004,
@@ -97,10 +97,10 @@ Use GeoSample to generate random samples that are spatially balanced using the G
 >>> qt.split_recursive(max_length=10000)
 >>> n_samples = 20
 >>>
->>> df.sample(n=n_samples, replace=False).plot(markersize=20, 
->>>                                            color='orange', 
->>>                                            edgecolor='k', 
->>>                                            lw=0.5,  
+>>> df.sample(n=n_samples, replace=False).plot(markersize=20,
+>>>                                            color='orange',
+>>>                                            edgecolor='k',
+>>>                                            lw=0.5,
 >>>                                            label='Random sample with no balancing')
 >>>
 >>> qt.sample(n=n_samples).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
@@ -115,13 +115,13 @@ Use GeoSample to generate random samples that are spatially balanced using the G
 >>> qt.split_recursive(max_length=10000)
 >>> n_samples = 20
 >>>
->>> df.sample(n=n_samples, replace=False).plot(markersize=20, 
->>>                                            color='orange', 
->>>                                            edgecolor='k', 
->>>                                            lw=0.5,  
+>>> df.sample(n=n_samples, replace=False).plot(markersize=20,
+>>>                                            color='orange',
+>>>                                            edgecolor='k',
+>>>                                            lw=0.5,
 >>>                                            label='Random sample with no balancing')
 >>>
->>> qt.sample(n=n_samples, 
+>>> qt.sample(n=n_samples,
 >>>           weight_by_clusters=True).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
 ```
 
