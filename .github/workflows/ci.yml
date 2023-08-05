@@ -12,21 +12,19 @@ jobs:
 
   Tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - name: Setup Python ${{ matrix.python-version }}
+      - uses: actions/setup-python@v4
         with:
-          python-version: 3.9.16
-      - uses: syphar/restore-virtualenv@v1
-        id: cache-gs
-        with:
-          requirement_files: setup.cfg
-      - uses: syphar/restore-pip-download-cache@v1
-        if: steps.cache-gs.outputs.cache-hit != 'true'
+          python-version: ${{ matrix.python-version }}
+          cache: pip
       - name: Install Geosample
         run: |
           pip install .[tests]
-        if: steps.cache-gs.outputs.cache-hit != 'true'
       - name: Unittests
         run: |
           python -m unittest
