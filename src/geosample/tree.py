@@ -1,13 +1,37 @@
+import typing as T
 from abc import ABC, abstractmethod
 from collections import defaultdict, namedtuple
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from scipy.spatial import cKDTree
 from shapely.geometry import Polygon
 from sklearn.cluster import KMeans
 
 BBox = namedtuple('BBox', 'left bottom right top')
+
+
+@pd.api.extensions.register_dataframe_accessor('grts')
+class GRTSFrame:
+    def __init__(self, obj):
+        self._obj = obj
+        data = np.c_[self._obj.geometry.x.values, self._obj.geometry.y.values]
+        self.tree = cKDTree(data)
+
+    def query_points(self, points: np.ndarray, k: int = 1) -> gpd.GeoDataFrame:
+        """
+        Returns:
+            (distances, indices, mask)
+        """
+        distances, indices = self.tree.query(points, k=k)
+        mask = np.zeros(len(self._obj.index), dtype=bool)
+        mask[indices] = True
+
+        df = self._obj.loc[mask]
+        df = df.assign(point_distance=distances)
+
+        return df
 
 
 class TreeMixin(ABC):
