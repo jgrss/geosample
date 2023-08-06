@@ -44,6 +44,12 @@ Use GeoSample to generate random samples that are spatially balanced using the G
 >>>
 >>> # Get 5 random points using the Generalized Random Tessellation Stratified (GRTS) method
 >>> dfs = qt.sample(n=5)
+>>>
+>>> # Query the k-nearest points to other samples
+>>> # lon, lat =
+>>> other_samples = np.array([[lon, lat]])
+>>> knearest_samples_df = dfs.grts.query_points(points=other_samples, k=1)
+>>> assert len(knearest_samples_df.index) == other_samples.shape[0]
 ```
 
 # Examples
@@ -97,13 +103,17 @@ Use GeoSample to generate random samples that are spatially balanced using the G
 >>> qt.split_recursive(max_length=10000)
 >>> n_samples = 20
 >>>
->>> df.sample(n=n_samples, replace=False).plot(markersize=20,
->>>                                            color='orange',
->>>                                            edgecolor='k',
->>>                                            lw=0.5,
->>>                                            label='Random sample with no balancing')
+>>> df.sample(n=n_samples, replace=False).plot(
+>>>   markersize=20,
+>>>   color='orange',
+>>>   edgecolor='k',
+>>>   lw=0.5,
+>>>   label='Random sample with no balancing'
+>>> )
 >>>
->>> qt.sample(n=n_samples).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
+>>> qt.sample(n=n_samples).plot(
+>>>   markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS'
+>>> )
 ```
 
 ![](data/grts_fig6.png)
@@ -115,14 +125,20 @@ Use GeoSample to generate random samples that are spatially balanced using the G
 >>> qt.split_recursive(max_length=10000)
 >>> n_samples = 20
 >>>
->>> df.sample(n=n_samples, replace=False).plot(markersize=20,
->>>                                            color='orange',
->>>                                            edgecolor='k',
->>>                                            lw=0.5,
->>>                                            label='Random sample with no balancing')
+>>> df.sample(n=n_samples, replace=False).plot(
+>>>   markersize=20,
+>>>   color='orange',
+>>>   edgecolor='k',
+>>>   lw=0.5,
+>>>   label='Random sample with no balancing'
+>>> )
 >>>
->>> qt.sample(n=n_samples,
->>>           weight_by_clusters=True).plot(markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS')
+>>> qt.sample(
+>>>   n=n_samples,
+>>>   weight_by_clusters=True
+>>> ).plot(
+>>>   markersize=20, color='#34d800', edgecolor='k', lw=0.5, label='GRTS'
+>>> )
 ```
 
 ![](data/grts_fig7.png)
