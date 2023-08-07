@@ -375,7 +375,7 @@ class QuadTree(TreeMixin):
                 # PyGEOS syntax
                 near_clusters = np.array(
                     list(sindex.nearest(box(*bounds), return_all=True))
-                )[:num_results]
+                )[:num_results].flatten()
 
             # Duplicate the near grids
             qt_frame = pd.concat(
