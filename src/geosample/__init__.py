@@ -1,5 +1,5 @@
 __path__: str = __import__('pkgutil').extend_path(__path__, __name__)
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 from .map import MapSamples
 from .tree import QuadTree
