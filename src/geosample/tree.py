@@ -6,7 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
-from shapely.geometry import Polygon
+from shapely.geometry import box
 from sklearn.cluster import KMeans
 
 BBox = namedtuple('BBox', 'left bottom right top')
@@ -25,10 +25,7 @@ class GRTSFrame:
             (distances, indices, mask)
         """
         distances, indices = self.tree.query(points, k=k)
-        mask = np.zeros(len(self._obj.index), dtype=bool)
-        mask[indices] = True
-
-        df = self._obj.loc[mask]
+        df = self._obj.iloc[indices]
         df = df.assign(point_distance=distances)
 
         return df
@@ -54,18 +51,7 @@ class TreeMixin(ABC):
         Returns:
             ``shapely.geometry.Polygon``
         """
-
-        left, bottom, right, top = bounds
-
-        return Polygon(
-            [
-                (left, bottom),
-                (left, top),
-                (right, top),
-                (right, bottom),
-                (left, bottom),
-            ]
-        )
+        return box(*bounds)
 
     @abstractmethod
     def to_geom(self):
@@ -380,9 +366,16 @@ class QuadTree(TreeMixin):
             )
 
             sindex = qt_frame.sindex
-            near_clusters = list(
-                sindex.nearest(bounds, num_results=num_results)
-            )
+            try:
+                # RTree syntax
+                near_clusters = np.array(
+                    list(sindex.nearest(bounds, num_results=num_results))
+                )
+            except TypeError:
+                # PyGEOS syntax
+                near_clusters = np.array(
+                    list(sindex.nearest(box(*bounds), return_all=True))
+                )[:num_results]
 
             # Duplicate the near grids
             qt_frame = pd.concat(
