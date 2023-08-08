@@ -31,7 +31,7 @@ class TestTree(unittest.TestCase):
             )
         )
         self.assertTrue(
-            np.allclose(np.array(query_df.index), np.array([0, 2]))
+            np.allclose(np.array(query_df.index), np.array([2, 0]))
         )
-        self.assertTrue(query_df.iloc[0].geometry == Point(-90, 40))
-        self.assertTrue(query_df.iloc[1].geometry == Point(-88, 38))
+        self.assertTrue(query_df.iloc[0].geometry == Point(-88, 38))
+        self.assertTrue(query_df.iloc[1].geometry == Point(-90, 40))

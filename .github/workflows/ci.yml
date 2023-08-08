@@ -14,14 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Python ${{ matrix.python-version }}
-      - uses: actions/setup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-          cache: setup.cfg
+          cache: pip
+      - name: Install libgeos
+        run: |
+          # Temporary? dpkg fix: https://askubuntu.com/questions/1276111/error-upgrading-grub-efi-amd64-signed-special-device-old-ssd-does-not-exist
+          sudo rm /var/cache/debconf/config.dat
+          sudo dpkg --configure -a
+          sudo apt update && sudo apt upgrade -y && sudo apt install -y
+          sudo apt install software-properties-common -y
+          sudo add-apt-repository ppa:ubuntugis/ppa
+          sudo apt update -y && sudo apt install -y
+          sudo apt install libgeos++-dev -y
+      - name: Install Python packages
+        run: |
+          pip install -U pip setuptools>=59.5.0 wheel
+          pip install numpy>=1.19.0
       - name: Install Geosample
         run: |
           pip install .[tests]

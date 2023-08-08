@@ -6,7 +6,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
-from shapely.geometry import box
+from shapely.geometry import Polygon, box
 from sklearn.cluster import KMeans
 
 BBox = namedtuple('BBox', 'left bottom right top')
@@ -41,8 +41,7 @@ class TreeMixin(ABC):
         """Get the GeoDataFrame CRS."""
         return self.dataframe.crs
 
-    def create_poly(self, bounds):
-
+    def create_poly(self, bounds: T.Sequence[float]) -> Polygon:
         """Creates a Polygon geometry.
 
         Args:
@@ -63,7 +62,6 @@ class TreeMixin(ABC):
 
 
 class QuadTree(TreeMixin):
-
     """A class to generate a QuadTree.
 
     Args:
@@ -71,8 +69,7 @@ class QuadTree(TreeMixin):
         force_square (Optional[bool])
     """
 
-    def __init__(self, dataframe, force_square=True):
-
+    def __init__(self, dataframe: gpd.GeoDataFrame, force_square: bool = True):
         super(QuadTree, self).__init__(dataframe)
 
         bounds_ = self.dataframe.total_bounds.flatten().tolist()
@@ -109,36 +106,36 @@ class QuadTree(TreeMixin):
     def __next__(self):
         self.split()
 
+    def __len__(self) -> int:
+        return self.nquads
+
     @property
-    def nquads(self):
+    def nquads(self) -> int:
         """Get the number of quadrants in the tree."""
         return len(self.tree)
 
     @property
-    def tree(self):
+    def tree(self) -> T.Sequence[Polygon]:
         """Get the quadrant tree geometry."""
         return self.to_geom()
 
     @staticmethod
-    def bounds_to_tuple(bounds):
-
-        return BBox(
-            left=bounds[0], bottom=bounds[1], right=bounds[2], top=bounds[3]
-        )
+    def bounds_to_tuple(bounds: T.Sequence[float]) -> BBox:
+        return BBox(*bounds)
 
     @property
-    def min_qside(self):
+    def min_qside(self) -> str:
         """Get the minimum quadrant side (y or x)"""
         return 'y' if self.qy_len < self.qx_len else 'x'
 
     @property
-    def qy_len(self):
+    def qy_len(self) -> float:
         """Get the quadrant latitudinal length."""
         bbox = self.bounds_to_tuple(self.tree_bounds[0])
         return bbox.top - bbox.bottom
 
     @property
-    def qx_len(self):
+    def qx_len(self) -> float:
         """Get the quadrant longitudinal length."""
         bbox = self.bounds_to_tuple(self.tree_bounds[0])
         return bbox.right - bbox.left
@@ -149,23 +146,22 @@ class QuadTree(TreeMixin):
         return self.qy_len if self.min_qside == 'y' else self.qx_len
 
     @property
-    def qmax(self):
+    def qmax(self) -> float:
         """Get the maximum quadrant length."""
         return self.qy_len if self.min_qside == 'x' else self.qx_len
 
     @property
-    def bounds(self):
+    def bounds(self) -> BBox:
         """Get the tree bounds."""
-        frame_ = self.to_frame().total_bounds.flatten().tolist()
-        return BBox(
-            left=frame_[0], bottom=frame_[1], right=frame_[2], top=frame_[3]
-        )
+        frame = self.to_frame().total_bounds.flatten().tolist()
 
-    def to_geom(self):
+        return self.bounds_to_tuple(frame)
+
+    def to_geom(self) -> T.Sequence[Polygon]:
         """Converts quadrant bounds to geometry."""
         return [self.create_poly(bbox) for bbox in self.tree_bounds]
 
-    def to_frame(self):
+    def to_frame(self) -> gpd.GeoDataFrame:
         """Converts tree quadrants to a DataFrame."""
         return gpd.GeoDataFrame(
             data=self.tree_ids,
@@ -175,12 +171,9 @@ class QuadTree(TreeMixin):
         )
 
     @property
-    def counts(self):
-
+    def counts(self) -> T.Dict[int, int]:
         """Get counts of sample occurrences in each quadrant."""
-
         counts = defaultdict(int)
-
         for i, geom in zip(self.tree_ids, self.tree):
             point_int = list(self.sindex.intersection(geom.bounds))
             if point_int:
@@ -188,8 +181,7 @@ class QuadTree(TreeMixin):
 
         return dict(counts)
 
-    def count(self, qid):
-
+    def count(self, qid: str) -> int:
         """Counts sample occurrences in a quadrant.
 
         Args:
@@ -208,8 +200,7 @@ class QuadTree(TreeMixin):
 
         return len(point_int) if point_int else 0
 
-    def split(self, thresh=0):
-
+    def split(self, thresh: int = 0) -> "QuadTree":
         """Splits a tree into quadrants.
 
         1 | 3
@@ -220,14 +211,12 @@ class QuadTree(TreeMixin):
             thresh (int): The sample threshold to remove a quadrant. Default is 0, or remove a
                 quadrant if it is empty.
         """
-
         new_tree_bounds = []
         new_tree_ids = []
 
         self.contains_null = False
 
         for qi, quad in enumerate(self.tree):
-
             left, bottom, right, top = quad.bounds
             xcenter = left + (right - left) / 2.0
             ycenter = top - (top - bottom) / 2.0
@@ -245,14 +234,10 @@ class QuadTree(TreeMixin):
             ):
 
                 id_list = list(self.sindex.intersection(bbox))
-
                 if id_list:
-
                     if len(id_list) > thresh:
-
                         new_tree_bounds.append(bbox)
                         new_tree_ids.append(quad_id + str(id_))
-
                     else:
                         self.contains_null = True
 
@@ -265,9 +250,12 @@ class QuadTree(TreeMixin):
         return self
 
     def split_recursive(
-        self, max_samples=None, max_length=None, first_null=False, min_thresh=0
-    ):
-
+        self,
+        max_samples: int = None,
+        max_length: int = None,
+        first_null: bool = False,
+        min_thresh: int = 0,
+    ) -> None:
         """Splits quadrants recursively.
 
         Args:
@@ -281,19 +269,15 @@ class QuadTree(TreeMixin):
         Preference:
             first_null > max_length > max_samples > min_samples
         """
-
         if first_null:
-
             max_length = None
             max_samples = None
 
         elif isinstance(max_length, float) or isinstance(max_length, int):
-
             first_null = False
             max_samples = None
 
         elif isinstance(max_samples, int):
-
             if not isinstance(max_samples, int):
                 raise NameError('One of the four options must be chosen.')
 
@@ -303,21 +287,17 @@ class QuadTree(TreeMixin):
         old_count = 1e9
 
         while True:
-
             self.split(thresh=min_thresh)
 
             if isinstance(max_length, float) or isinstance(max_length, int):
-
                 if self.qmax <= max_length:
                     break
 
             elif first_null:
-
                 if self.contains_null:
                     break
 
             elif isinstance(max_samples, int):
-
                 max_count = self.counts[max(self.counts, key=self.counts.get)]
 
                 if max_count <= max_samples:
@@ -328,8 +308,9 @@ class QuadTree(TreeMixin):
 
                 old_count = max_count
 
-    def weight_grids(self, n_clusters=10, num_results=2):
-
+    def weight_grids(
+        self, n_clusters: int = 10, num_results: int = 2
+    ) -> gpd.GeoDataFrame:
         """Weights grids for sampling.
 
         Args:
@@ -339,7 +320,6 @@ class QuadTree(TreeMixin):
         Returns:
             ``geopandas.DataFrame``
         """
-
         qt_frame = self.to_frame()
 
         # Get coordinates
@@ -357,7 +337,6 @@ class QuadTree(TreeMixin):
 
         # Get the n nearest grids to the cluster centers
         for cluster_index in range(0, kmeans.cluster_centers_.shape[0]):
-
             bounds = (
                 kmeans.cluster_centers_[cluster_index, 0],
                 kmeans.cluster_centers_[cluster_index, 1],
@@ -385,9 +364,13 @@ class QuadTree(TreeMixin):
         return qt_frame
 
     def sample(
-        self, n=None, weight_by_clusters=False, random_state=None, **kwargs
+        self,
+        n: int = 1,
+        weight_by_clusters: bool = False,
+        random_state: T.Optional[int] = None,
+        rng: T.Optional[np.random.Generator] = None,
+        **kwargs,
     ):
-
         """Samples from the hierarchical grid address using the Generalized
         Random Tessellation Stratified (GRTS) method.
 
@@ -400,12 +383,8 @@ class QuadTree(TreeMixin):
         Returns:
             ``geopandas.GeoDataFrame``
         """
-
-        if not isinstance(n, int):
-            n = 1
-
-        if isinstance(random_state, int):
-            np.random.seed(random_state)
+        if rng is None:
+            rng = np.random.default_rng(random_state)
 
         # Sort by base 4 id
         if weight_by_clusters:
@@ -414,39 +393,28 @@ class QuadTree(TreeMixin):
             df = self.to_frame()
 
         df = df.sort_values(by='id')
-
         npool = df.shape[0]
         interval = int(np.ceil(npool / n))
-
         # Get a random starting index
-        start = np.random.randint(0, high=interval, size=1, dtype=int)[0]
-
+        start = rng.integers(low=0, high=interval)
         # Get the sample indices
         sample_indices = np.arange(start, npool, interval)
-
         # Get the random grids
         df_sample = df.iloc[sample_indices]
-
-        sample_indices = []
-
+        sample_indices: T.Sequence[int] = []
         # Iterate over the selected grids,
         # get intersecting samples, and
         # select 1 sample within each grid.
         for row in df_sample.itertuples():
-
             # The grid bounds
             bbox = row.geometry.bounds
-
             # Points that intersect the current grid
             point_int = list(self.sindex.intersection(bbox))
-
             # Get one random point within the grid
-            sample_indices.append(
-                np.random.choice(point_int, size=1, replace=False)[0]
-            )
+            sample_indices.append(rng.choice(point_int))
 
         # Get the random points
-        return self.dataframe.iloc[sample_indices]
+        return self.dataframe.iloc[np.array(sample_indices)]
 
 
 class Rtree(TreeMixin):
