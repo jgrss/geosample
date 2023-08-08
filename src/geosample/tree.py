@@ -368,8 +368,7 @@ class QuadTree(TreeMixin):
     def sample(
         self,
         n: int = 1,
-        weight_by_inverse_density: bool = False,
-        weight_by_clusters: bool = False,
+        weight_method: str = None,
         random_state: T.Optional[int] = None,
         rng: T.Optional[np.random.Generator] = None,
         **kwargs,
@@ -379,8 +378,7 @@ class QuadTree(TreeMixin):
 
         Args:
             n (int): The target sample size.
-            weight_by_inverse_density (Optional[bool])
-            weight_by_clusters (Optional[bool])
+            weight_method (Optional[str]): Choices are ['density-factor', 'inverse-density', 'cluster'].
             random_state (Optional[int])
             kwargs (Optional[dict]): Keyword arguments for ``self.weight_grids``.
 
@@ -390,14 +388,14 @@ class QuadTree(TreeMixin):
         if rng is None:
             rng = np.random.default_rng(random_state)
 
-        if weight_by_clusters:
+        if weight_method == 'cluster':
             df = self.weight_grids(**kwargs)
         else:
             df = self.to_frame()
 
         # Base 4 reverse sorting
         df = df.sort_values(by=ID_COLUMN)
-        if weight_by_inverse_density:
+        if weight_method in ('density-factor', 'inverse-density'):
             # Add quadrant counts
             df = df.merge(
                 (
@@ -411,13 +409,16 @@ class QuadTree(TreeMixin):
             over_df: T.Sequence[pd.DataFrame] = []
             for over_val in np.unique(oversample):
                 if over_val > 1:
-                    over_df.append(
-                        df.loc[
-                            df.index[np.where(oversample == over_val)].repeat(
-                                int(over_val)
-                            )
-                        ]
-                    )
+                    if weight_method == 'inverse-density':
+                        repeated_index = df.index[
+                            np.where(oversample == over_val)
+                        ].repeat(int(over_val))
+                    else:
+                        repeated_index = df.index[
+                            np.where(oversample == over_val)
+                        ].repeat(2)
+                    over_df.append(df.loc[repeated_index])
+
             if over_df:
                 df = pd.concat((df, pd.concat(over_df)))
                 df = df.sort_values(by=ID_COLUMN)
