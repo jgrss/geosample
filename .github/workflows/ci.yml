@@ -22,6 +22,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Install libgeos
+        run: |
+          # Temporary? dpkg fix: https://askubuntu.com/questions/1276111/error-upgrading-grub-efi-amd64-signed-special-device-old-ssd-does-not-exist
+          sudo rm /var/cache/debconf/config.dat
+          sudo dpkg --configure -a
+          # Install GDAL
+          sudo apt update && sudo apt upgrade -y && sudo apt install -y
+          sudo apt install software-properties-common -y
+          sudo add-apt-repository ppa:ubuntugis/ppa
+          sudo apt update -y && sudo apt install -y
+          sudo apt install libgeos++-dev libgeos-3.9.1 libgeos-c1v5 libgeos-dev -y
+          sudo apt install libgl1 libspatialindex-dev g++ -y
       - name: Install Python packages
         run: |
           # Install Python GDAL
