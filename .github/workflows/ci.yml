@@ -32,7 +32,6 @@ jobs:
           sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt update -y && sudo apt install -y
           sudo apt install libgeos++-dev -y
-          sudo apt install libgl1 libspatialindex-dev g++ -y
       - name: Install Python packages
         run: |
           pip install -U pip setuptools>=59.5.0 wheel
