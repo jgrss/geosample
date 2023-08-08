@@ -31,7 +31,7 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt update -y && sudo apt install -y
-          sudo apt install libgeos++-dev libgeos libgeos-c1v5 libgeos-dev -y
+          sudo apt install libgeos++-dev -y
           sudo apt install libgl1 libspatialindex-dev g++ -y
       - name: Install Python packages
         run: |
