@@ -10,6 +10,7 @@ from shapely.geometry import Polygon, box
 from sklearn.cluster import KMeans
 
 BBox = namedtuple('BBox', 'left bottom right top')
+ID_COLUMN = 'uid'
 
 
 @pd.api.extensions.register_dataframe_accessor('grts')
@@ -77,7 +78,7 @@ class QuadTree(TreeMixin):
 
         # Initiate the tree as the total bounds
         self.tree_bounds = [bounds_]
-        self.tree_ids = ['0']
+        self.tree_ids = ['']
         self.clusters = None
 
         if force_square:
@@ -167,19 +168,19 @@ class QuadTree(TreeMixin):
             data=self.tree_ids,
             geometry=self.to_geom(),
             crs=self.crs,
-            columns=['id'],
+            columns=[ID_COLUMN],
         )
 
     @property
-    def counts(self) -> T.Dict[int, int]:
+    def counts(self) -> T.Dict[str, int]:
         """Get counts of sample occurrences in each quadrant."""
-        counts = defaultdict(int)
+        counts = {}
         for i, geom in zip(self.tree_ids, self.tree):
             point_int = list(self.sindex.intersection(geom.bounds))
             if point_int:
-                counts[i] += len(point_int)
+                counts[i] = len(point_int)
 
-        return dict(counts)
+        return counts
 
     def count(self, qid: str) -> int:
         """Counts sample occurrences in a quadrant.
@@ -222,22 +223,23 @@ class QuadTree(TreeMixin):
             ycenter = top - (top - bottom) / 2.0
 
             quad_id = self.tree_ids[qi]
+            qdict = {
+                # lower left
+                0: (left, bottom, xcenter, ycenter),
+                # upper left
+                1: (left, ycenter, xcenter, top),
+                # lower right
+                2: (xcenter, bottom, right, ycenter),
+                # upper right
+                3: (xcenter, ycenter, right, top),
+            }
 
-            for id_, bbox in zip(
-                [1, 3, 0, 2],
-                [
-                    (left, ycenter, xcenter, top),
-                    (xcenter, ycenter, right, top),
-                    (left, bottom, xcenter, ycenter),
-                    (xcenter, bottom, right, ycenter),
-                ],
-            ):
-
+            for qid, bbox in qdict.items():
                 id_list = list(self.sindex.intersection(bbox))
                 if id_list:
                     if len(id_list) > thresh:
                         new_tree_bounds.append(bbox)
-                        new_tree_ids.append(quad_id + str(id_))
+                        new_tree_ids.append(f"{quad_id}{qid}")
                     else:
                         self.contains_null = True
 
@@ -366,6 +368,7 @@ class QuadTree(TreeMixin):
     def sample(
         self,
         n: int = 1,
+        weight_by_inverse_density: bool = False,
         weight_by_clusters: bool = False,
         random_state: T.Optional[int] = None,
         rng: T.Optional[np.random.Generator] = None,
@@ -376,6 +379,7 @@ class QuadTree(TreeMixin):
 
         Args:
             n (int): The target sample size.
+            weight_by_inverse_density (Optional[bool])
             weight_by_clusters (Optional[bool])
             random_state (Optional[int])
             kwargs (Optional[dict]): Keyword arguments for ``self.weight_grids``.
@@ -386,21 +390,54 @@ class QuadTree(TreeMixin):
         if rng is None:
             rng = np.random.default_rng(random_state)
 
-        # Sort by base 4 id
         if weight_by_clusters:
             df = self.weight_grids(**kwargs)
         else:
             df = self.to_frame()
 
-        df = df.sort_values(by='id')
-        npool = df.shape[0]
-        interval = int(np.ceil(npool / n))
-        # Get a random starting index
-        start = rng.integers(low=0, high=interval)
-        # Get the sample indices
-        sample_indices = np.arange(start, npool, interval)
-        # Get the random grids
-        df_sample = df.iloc[sample_indices]
+        # Base 4 reverse sorting
+        df = df.sort_values(by=ID_COLUMN)
+        if weight_by_inverse_density:
+            # Add quadrant counts
+            df = df.merge(
+                (
+                    pd.DataFrame(self.counts, index=['qcounts'])
+                    .T.rename_axis(index=ID_COLUMN)
+                    .reset_index()
+                ),
+                on=ID_COLUMN,
+            )
+            oversample = np.array(1.0 / (df.qcounts / df.qcounts.max()))
+            over_df: T.Sequence[pd.DataFrame] = []
+            for over_val in np.unique(oversample):
+                if over_val > 1:
+                    over_df.append(
+                        df.loc[
+                            df.index[np.where(oversample == over_val)].repeat(
+                                int(over_val)
+                            )
+                        ]
+                    )
+            if over_df:
+                df = pd.concat((df, pd.concat(over_df)))
+                df = df.sort_values(by=ID_COLUMN)
+
+        npool = len(df.index)
+        df_sample = df.iloc[:: int(np.ceil(npool / n))]
+
+        if n > 0.5 * len(df):
+            df_sample = pd.concat(
+                (
+                    df_sample,
+                    df.query(
+                        f"uid != {df_sample[ID_COLUMN].values.tolist()}"
+                    ).sample(
+                        n=n - len(df_sample.index),
+                        random_state=rng.integers(low=0, high=100_000),
+                    ),
+                ),
+            )
+
         sample_indices: T.Sequence[int] = []
         # Iterate over the selected grids,
         # get intersecting samples, and
@@ -445,5 +482,5 @@ class Rtree(TreeMixin):
             data=range(0, self.nleaves),
             geometry=self.to_geom(),
             crs=self.crs,
-            columns=['id'],
+            columns=[ID_COLUMN],
         )
