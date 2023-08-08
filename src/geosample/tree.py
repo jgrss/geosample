@@ -424,6 +424,7 @@ class QuadTree(TreeMixin):
 
         npool = len(df.index)
         df_sample = df.iloc[:: int(np.ceil(npool / n))]
+        df_sample = df_sample.drop_duplicates(subset=[ID_COLUMN])
 
         if n > 0.5 * len(df):
             df_sample = pd.concat(
