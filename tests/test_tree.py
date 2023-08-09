@@ -49,7 +49,7 @@ class TestTree(unittest.TestCase):
             n=2, weight_method='density-factor', random_state=42
         )
         self.assertTrue(samp_df.iloc[0].geometry == Point(-91, 43))
-        self.assertTrue(samp_df.iloc[1].geometry == Point(-85, 44))
+        self.assertTrue(samp_df.iloc[1].geometry == Point(-88, 46))
 
     def test_split(self):
         df = frame_from_coords(DATA1)

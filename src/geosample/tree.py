@@ -408,16 +408,18 @@ class QuadTree(TreeMixin):
             oversample = np.array(1.0 / (df.qcounts / df.qcounts.max()))
             over_df: T.Sequence[pd.DataFrame] = []
             for over_val in np.unique(oversample):
-                if over_val > 1:
-                    if weight_method == 'inverse-density':
+                if weight_method == 'inverse-density':
+                    if over_val > 1:
                         repeated_index = df.index[
                             np.where(oversample == over_val)
                         ].repeat(int(over_val))
-                    else:
+                        over_df.append(df.loc[repeated_index])
+                else:
+                    if over_val > 2:
                         repeated_index = df.index[
                             np.where(oversample == over_val)
-                        ].repeat(2)
-                    over_df.append(df.loc[repeated_index])
+                        ].repeat(1)
+                        over_df.append(df.loc[repeated_index])
 
             if over_df:
                 df = pd.concat((df, pd.concat(over_df)))
