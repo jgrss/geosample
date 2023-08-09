@@ -5,6 +5,7 @@ from collections import defaultdict, namedtuple
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from pyproj import CRS
 from scipy.spatial import cKDTree
 from shapely.geometry import Polygon, box
 from sklearn.cluster import KMeans
@@ -73,33 +74,40 @@ class QuadTree(TreeMixin):
     def __init__(self, dataframe: gpd.GeoDataFrame, force_square: bool = True):
         super(QuadTree, self).__init__(dataframe)
 
-        bounds_ = self.dataframe.total_bounds.flatten().tolist()
-        bounds_names = self.bounds_to_tuple(bounds_)
+        if dataframe.crs == CRS(4326):
+            offset = 0.5
+        else:
+            offset = 20_000
+        total_bounds = self.dataframe.total_bounds.flatten().tolist()
+        total_bounds[0] -= offset
+        total_bounds[1] -= offset
+        total_bounds[2] += offset
+        total_bounds[3] += offset
+        bounds_names = self.bounds_to_tuple(total_bounds)
 
         # Initiate the tree as the total bounds
-        self.tree_bounds = [bounds_]
+        self.tree_bounds = [total_bounds]
         self.tree_ids = ['']
         self.clusters = None
 
         if force_square:
-
             # Update the grid to force quadrants of equal length
             if self.min_qside == 'y':
-                bounds_ = (
+                total_bounds = (
                     bounds_names.left,
                     bounds_names.top - abs(self.qx_len),
                     bounds_names.right,
                     bounds_names.top,
                 )
             else:
-                bounds_ = (
+                total_bounds = (
                     bounds_names.left,
                     bounds_names.bottom,
                     bounds_names.left + abs(self.qy_len),
                     bounds_names.top,
                 )
 
-            self.tree_bounds = [bounds_]
+            self.tree_bounds = [total_bounds]
 
     def __iter__(self):
         return self
