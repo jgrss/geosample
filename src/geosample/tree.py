@@ -445,12 +445,15 @@ class QuadTree(TreeMixin):
         # get intersecting samples, and
         # select 1 sample within each grid.
         for row in df_sample.itertuples():
-            # The grid bounds
-            bbox = row.geometry.bounds
             # Points that intersect the current grid
-            point_int = list(self.sindex.intersection(bbox))
+            qsamples = list(self.sindex.query(row.geometry))
             # Get one random point within the grid
-            sample_indices.append(rng.choice(point_int))
+            while qsamples:
+                q = rng.choice(qsamples)
+                if q not in sample_indices:
+                    sample_indices.append(q)
+                    break
+                qsamples.remove(q)
 
         # Get the random points
         return self.dataframe.iloc[np.array(sample_indices)]
