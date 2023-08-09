@@ -31,11 +31,7 @@ jobs:
           sudo apt install software-properties-common -y
           sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt update -y && sudo apt install -y
-          sudo apt install libgeos++-dev -y
-      - name: Install Python packages
-        run: |
-          pip install -U pip setuptools>=59.5.0 wheel
-          pip install numpy>=1.19.0
+          sudo apt install libgeos++-dev libspatialindex-dev -y
       - name: Install Geosample
         run: |
           pip install .[tests]
