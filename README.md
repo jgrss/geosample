@@ -2,6 +2,10 @@
 [![python](https://img.shields.io/badge/Python-3.7%20%7C%203.8%20%7C%203.9-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
 [![](https://img.shields.io/github/v/release/jgrss/geosample?display_name=release)](https://github.com/jgrss/geosample/releases)
 
+> [!NOTE]
+> This repository's name conflicts with an [existing package named geosample on PyPI](https://pypi.org/project/geosample/). Therefore,
+> this project will no longer be maintained. Please use [https://github.com/jgrss/pygrts](https://github.com/jgrss/pygrts) instead.
+
 # GeoSample is a library for geospatial sampling
 
 Use GeoSample to generate random samples that are spatially balanced using the Generalized Random Tessellation Stratified (GRTS) method.
